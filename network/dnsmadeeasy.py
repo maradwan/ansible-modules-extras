@@ -65,6 +65,7 @@ options:
       - record's "Time to live".  Number of seconds the record remains cached in DNS servers.
     required: false
     default: 1800
+  
   gtdLocation:
     description:
      - The GTD Location is record on GTD enabled domains
