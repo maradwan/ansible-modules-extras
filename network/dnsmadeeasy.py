@@ -65,7 +65,11 @@ options:
       - record's "Time to live".  Number of seconds the record remains cached in DNS servers.
     required: false
     default: 1800
-    
+  gtdLocation:
+    description:
+     - The GTD Location is record on GTD enabled domains
+    required: false
+    default: DEFAULT
   state:
     description:
       - whether the record should exist or not
@@ -126,7 +130,7 @@ except ImportError, e:
 
 class DME2:
 
-    def __init__(self, apikey, secret, domain, module):
+    def __init__(self, apikey, secret, domain, gtdLocation, module):
         self.module = module
 
         self.api = apikey
@@ -134,6 +138,7 @@ class DME2:
         self.baseurl = 'https://api.dnsmadeeasy.com/V2.0/'
         self.domain = str(domain)
         self.domain_map = None      # ["domain_name"] => ID
+        self.gtdLocation = gtdLocation
         self.record_map = None      # ["record_name"] => ID
         self.records = None         # ["record_ID"] => <record>
         self.all_records = None
@@ -199,14 +204,14 @@ class DME2:
     # can be several MX records for a single record_name while there can
     # only be a single CNAME for a particular record_name. Note also that
     # there can be several records with different types for a single name.
-    def getMatchingRecord(self, record_name, record_type, record_value):
+    def getMatchingRecord(self, record_name, record_type, record_value, gtdLocation):
         # Get all the records if not already cached
         if not self.all_records:
             self.all_records = self.getRecords()
 
         if record_type in ["A", "AAAA", "CNAME", "HTTPRED", "PTR"]:
             for result in self.all_records:
-                if result['name'] == record_name and result['type'] == record_type:
+                if result['name'] == record_name and result['type'] == record_type and result['gtdLocation'] == gtdLocation:
                     return result
             return False
         elif record_type in ["MX", "NS", "TXT", "SRV"]:
@@ -217,7 +222,7 @@ class DME2:
                     value = record_value.split(" ")[3]
                 else:
                     value = record_value
-                if result['name'] == record_name and result['type'] == record_type and result['value'] == value:
+                if result['name'] == record_name and result['type'] == record_type and result['gtdLocation'] == gtdLocation and result['value'] == value:
                     return result
             return False
         else:
@@ -274,6 +279,7 @@ def main():
                              'A', 'AAAA', 'CNAME', 'HTTPRED', 'MX', 'NS', 'PTR', 'SRV', 'TXT']),
             record_value=dict(required=False),
             record_ttl=dict(required=False, default=1800, type='int'),
+            gtdLocation=dict(required=False, default='DEFAULT'),
             validate_certs = dict(default='yes', type='bool'),
         ),
         required_together=(
@@ -285,12 +291,13 @@ def main():
         module.fail_json(msg="Import Error: " + IMPORT_ERROR)
 
     DME = DME2(module.params["account_key"], module.params[
-               "account_secret"], module.params["domain"], module)
+               "account_secret"], module.params["domain"], module.params["gtdLocation"], module)
     state = module.params["state"]
     record_name = module.params["record_name"]
     record_type = module.params["record_type"]
     record_value = module.params["record_value"]
-
+    gtdLocation  = module.params["gtdLocation"] 
+   
     # Follow Keyword Controlled Behavior
     if record_name is None:
         domain_records = DME.getRecords()
@@ -300,7 +307,7 @@ def main():
         module.exit_json(changed=False, result=domain_records)
 
     # Fetch existing record + Build new one
-    current_record = DME.getMatchingRecord(record_name, record_type, record_value)
+    current_record = DME.getMatchingRecord(record_name, record_type, record_value, gtdLocation)
     new_record = {'name': record_name}
     for i in ["record_value", "record_type", "record_ttl"]:
         if not module.params[i] is None:
