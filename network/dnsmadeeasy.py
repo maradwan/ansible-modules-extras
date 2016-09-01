@@ -50,7 +50,7 @@ options:
     description:
       - Record type.
     required: false
-    choices: [ 'A', 'AAAA', 'CNAME', 'HTTPRED', 'MX', 'NS', 'PTR', 'SRV', 'TXT' ]
+    choices: [ 'A', 'AAAA', 'CNAME', 'ANAME', 'HTTPRED', 'MX', 'NS', 'PTR', 'SRV', 'TXT' ]
     default: null
 
   record_value:
@@ -65,12 +65,13 @@ options:
       - record's "Time to live".  Number of seconds the record remains cached in DNS servers.
     required: false
     default: 1800
-  
+    
   gtdLocation:
     description:
      - The GTD Location is record on GTD enabled domains
     required: false
     default: DEFAULT
+
   state:
     description:
       - whether the record should exist or not
@@ -210,7 +211,7 @@ class DME2:
         if not self.all_records:
             self.all_records = self.getRecords()
 
-        if record_type in ["A", "AAAA", "CNAME", "HTTPRED", "PTR"]:
+        if record_type in ["A", "AAAA", "CNAME", "ANAME", "HTTPRED", "PTR"]:
             for result in self.all_records:
                 if result['name'] == record_name and result['type'] == record_type and result['gtdLocation'] == gtdLocation:
                     return result
@@ -277,7 +278,7 @@ def main():
             state=dict(required=True, choices=['present', 'absent']),
             record_name=dict(required=False),
             record_type=dict(required=False, choices=[
-                             'A', 'AAAA', 'CNAME', 'HTTPRED', 'MX', 'NS', 'PTR', 'SRV', 'TXT']),
+                             'A', 'AAAA', 'CNAME', 'ANAME', 'HTTPRED', 'MX', 'NS', 'PTR', 'SRV', 'TXT']),
             record_value=dict(required=False),
             record_ttl=dict(required=False, default=1800, type='int'),
             gtdLocation=dict(required=False, default='DEFAULT'),
